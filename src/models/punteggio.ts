@@ -28,6 +28,11 @@ export const PunteggioSchema = new Schema({
     },
     date: {
         type: Date,
+    },
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
     }
 });
 

@@ -20,8 +20,9 @@ async function creaNuovoPunteggio(req, res, next) {
         const minutes = req.body?.minutes;
         const seconds = req.body?.seconds;
         const date = req?.body?.date;
+        const userId = req.userId;
         const nuovoPunteggio = new Punteggio({
-            name, hours, minutes, seconds, date
+            name, hours, minutes, seconds, date, userId
         });
         await nuovoPunteggio.save();
     }
