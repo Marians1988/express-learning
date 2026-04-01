@@ -6,6 +6,6 @@ import getScore from '../controllers/scoreApi/getScore.js';
 import { authenticateToken } from '../middleware/auth.middleware.js';
 const router = Router();
 router.get('/punteggi', authenticateToken, getScores);
-router.get('/punteggio/:name', authenticateToken, getScore);
+router.get('/punteggio/:id', authenticateToken, getScore);
 router.post('/punteggio', authenticateToken, scoreValidators, addScore);
 export default router;

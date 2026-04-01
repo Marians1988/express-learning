@@ -9,6 +9,10 @@ export const userSchema = new Schema({
     password: {
         type: String,
         required: true
+    },
+    refreshToken: {
+        type: String,
+        required: false
     }
 });
 // Model → interfaccia per fare CRUD sul database

@@ -8,9 +8,9 @@ interface AuthRequest extends Request {
 
 export default async (req : AuthRequest, res: Response,next:NextFunction) =>{
     try {
-        const id = req.params.userId;
+        const id = req.params.id;
         console.log('ID ricevuto:', id); // Debug: verifica l'ID ricevuto
-        const punteggio = await Punteggio.findOne({ userId: id }); // recupera il documento con il nome e userId specificato
+        const punteggio = await Punteggio.findOne({ _id: id }); // recupera il documento con il nome e userId specificato
         if (!punteggio) {
             return res.status(HttpStatusCode.NotFound).json({ message: "Punteggio non trovato!" });
         }
