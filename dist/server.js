@@ -5,12 +5,15 @@ import punteggiRouter from './routes/punteggi.router.js';
 import authRouter from './routes/auth.router.js';
 import errorHandling from './errorHandling/error-handling.js';
 import cors from 'cors';
+import cookieParser from "cookie-parser";
 const app = express();
 app.use(express.json());
 app.use(cors({
     origin: process.env.ACCESS_CONTROL_ALLOW_ORIGIN || 'http://localhost:4200',
     methods: process.env.ACCESS_CONTROL_ALLOW_METHODS || 'GET,POST,PUT,DELETE',
+    credentials: true, // Permette l'invio di cookie e credenziali nelle richieste cross-origin
 }));
+app.use(cookieParser());
 connectToDB()
     .then(() => {
     app.listen(process.env.PORT || 3000, () => {

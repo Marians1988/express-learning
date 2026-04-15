@@ -5,8 +5,9 @@ import jwt from "jsonwebtoken";
 import { User } from "../../models/user.js";
 
 export default async (req: Request, res: Response, next: NextFunction) => {
+    //const { refreshToken } = req.body; // Se usiamo body per il refresh token
+    const refreshToken = req.cookies.refreshToken;
     try {
-        const { refreshToken } = req.body;
         if (!refreshToken) {
             throw new AppError('Refresh token required', HttpStatusCode.BadRequest);
         }

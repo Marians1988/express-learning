@@ -20,7 +20,19 @@ export default async (req, res, next) => {
         user.refreshToken = refreshToken;
         await user.save();
         return res
-            .setHeader('Set-Cookie', 'loggedIn=true; Max-Age=10; httpOnly')
+            .cookie('token', token, {
+            httpOnly: true, // Impedisce a JavaScript di leggere il token (Protezione XSS)
+            secure: process.env.NODE_ENV === 'production', // Il cookie viene inviato solo su HTTPS (in produzione)
+            sameSite: 'strict', // Protezione base contro attacchi CSRF
+            maxAge: 1 * 60 * 60 * 1000, // Durata del cookie in millisecondi (es. 1 ora)
+        })
+            .cookie('refreshToken', refreshToken, {
+            httpOnly: true, // Impedisce a JavaScript di leggere il token (Protezione XSS)
+            secure: process.env.NODE_ENV === 'production', // Il cookie viene inviato solo su HTTPS (in produzione)
+            sameSite: 'strict', // Protezione base contro attacchi CSRF
+            maxAge: 1 * 24 * 60 * 60 * 1000, // 7 giorni  Durata del cookie in millisecondi (es. 1 ora)
+            path: "/", // Disponibile per tutto il sito
+        })
             .status(HttpStatusCode.Accepted)
             .json({ message: "Login successful", token, refreshToken, user: { email: user.email, id: user._id.toString() } });
     }

@@ -8,8 +8,9 @@ interface AuthRequest extends Request {
 }
 
 export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    // const authHeader = req.headers['authorization'];     *se avessimo usato header Authorization: Bearer TOKEN
+    // const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    const token = req.cookies.token; // Se usiamo cookie per il token   
 
     if (!token) {
         throw new AppError('Access token required', HttpStatusCode.Unauthorized);
