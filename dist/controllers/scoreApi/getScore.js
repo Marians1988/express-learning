@@ -8,7 +8,7 @@ export default async (req, res, next) => {
         if (!punteggio) {
             return res.status(HttpStatusCode.NotFound).json({ message: "Punteggio non trovato!" });
         }
-        res.json(punteggio);
+        res.status(HttpStatusCode.Ok).json(punteggio);
     }
     catch (err) {
         next();

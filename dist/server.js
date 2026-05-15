@@ -6,6 +6,8 @@ import authRouter from './routes/auth.router.js';
 import errorHandling from './errorHandling/error-handling.js';
 import cors from 'cors';
 import cookieParser from "cookie-parser";
+import session from 'express-session';
+import { sessionCookieName, sessionCookieOptions, } from './config/session.config.js';
 const app = express();
 app.use(express.json());
 app.use(cors({
@@ -14,6 +16,13 @@ app.use(cors({
     credentials: true, // Permette l'invio di cookie e credenziali nelle richieste cross-origin
 }));
 app.use(cookieParser());
+app.use(session({
+    name: sessionCookieName,
+    secret: process.env.SESSION_SECRET || 'super-secret-key',
+    resave: false,
+    saveUninitialized: false,
+    cookie: sessionCookieOptions,
+}));
 connectToDB()
     .then(() => {
     app.listen(process.env.PORT || 3000, () => {

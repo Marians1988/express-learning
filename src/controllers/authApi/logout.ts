@@ -1,7 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 import { HttpStatusCode } from "axios";
 import jwt from 'jsonwebtoken';
-import { User } from "../../models/user.js";
+import { redisService } from "../../service.ts/redis.service.js";
+import { clearAuthCookies } from "../../utils/clearAuthCookies.js";
 
 export default async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -9,20 +10,29 @@ export default async (req: Request, res: Response, next: NextFunction) => {
         // const authHeader = req.headers['authorization'];
         // const token = authHeader && authHeader.split(' ')[1];
         const token = req.cookies.token;
+        const sessionId = req.sessionID;
         if (token) {
             const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as { userId: string };
-            const user = await User.findById(decoded.userId);
-            if (user) {
-                user.refreshToken = undefined;
-                await user.save();
+            await redisService.revokeToken(decoded.userId);
+            if (sessionId) {
+                await redisService.revokeSessionId(decoded.userId, sessionId);
             }
         }
-        res
-        .clearCookie('token', { httpOnly: true, secure: process.env.NODE_ENV === 'production' })
-        .clearCookie('refreshToken', { httpOnly: true, secure: process.env.NODE_ENV === 'production' })
-        .status(HttpStatusCode.Ok)
-        .json({ message: "Logged out successfully. Please remove the token from cookies." });
+
+        req.session.destroy((err) => {
+            if (err) {
+                next(err);
+                return;
+            }
+
+            clearAuthCookies(res);
+
+            res
+            .status(HttpStatusCode.Ok)
+            .json({ message: "Logged out successfully. Please remove the token from cookies." });
+        });
     } catch (err) {
+        clearAuthCookies(res);
         next(err);
     }
 };

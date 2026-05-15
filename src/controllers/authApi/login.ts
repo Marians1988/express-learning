@@ -4,6 +4,11 @@ import { AppError } from "../../errorHandling/errorClass.js";
 import { validationResult } from "express-validator";
 import jwt from "jsonwebtoken";
 import { User } from "../../models/user.js";
+import {
+  accessTokenCookieOptions,
+  refreshTokenCookieOptions,
+} from "./cookieOptions.js";
+import { redisService } from "../../service.ts/redis.service.js";
 
 export default async (req: Request, res: Response,next: NextFunction)=> {
     try{
@@ -18,29 +23,47 @@ export default async (req: Request, res: Response,next: NextFunction)=> {
           throw new AppError('User not found', HttpStatusCode.NotFound);
       }
       
-      const token = jwt.sign({ userId: user._id, email: user.email }, process.env.JWT_SECRET || 'fallback-secret', { expiresIn: '1h' });
+      const token = jwt.sign({ userId: user._id, email: user.email }, process.env.JWT_SECRET || 'fallback-secret', { expiresIn: '1m' });
       const refreshToken = jwt.sign({ userId: user._id }, process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret', { expiresIn: '7d' });
+
+      await new Promise<void>((resolve, reject) => {
+        req.session.regenerate((err) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          resolve();
+        });
+      });
+
+      const loggedInAt = new Date().toISOString();
+
+      req.session.userId = user._id.toString();
+      req.session.loggedInAt = loggedInAt;
+
+      await new Promise<void>((resolve, reject) => {
+        req.session.save((err) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          resolve();
+        });
+      });
+
+      const sessionId = req.sessionID;
       
       // Salva il refresh token nel database
-      user.refreshToken = refreshToken;
-      await user.save();
+      // user.refreshToken = refreshToken;
+      // await user.save();
+      await redisService.saveRefreshToken(user._id.toString(), refreshToken);
+      await redisService.saveSession(user._id.toString(), sessionId, loggedInAt);
       
       return res
-      .cookie('token', token, {
-        httpOnly: true, // Impedisce a JavaScript di leggere il token (Protezione XSS)
-        secure: process.env.NODE_ENV === 'production',    // Il cookie viene inviato solo su HTTPS (in produzione)
-        sameSite: 'strict',  // Protezione base contro attacchi CSRF
-        maxAge: 1 * 60 * 60 * 1000, // Durata del cookie in millisecondi (es. 1 ora)
-      })
-      .cookie('refreshToken', refreshToken, {
-        httpOnly: true, // Impedisce a JavaScript di leggere il token (Protezione XSS)
-        secure: process.env.NODE_ENV === 'production',    // Il cookie viene inviato solo su HTTPS (in produzione)
-        sameSite: 'strict',  // Protezione base contro attacchi CSRF
-        maxAge: 1 * 24 * 60 * 60 * 1000, // 7 giorni  Durata del cookie in millisecondi (es. 1 ora)
-        path: "/",         // Disponibile per tutto il sito
-      })
+      .cookie('token', token, accessTokenCookieOptions)
+      .cookie('refreshToken', refreshToken, refreshTokenCookieOptions)
       .status(HttpStatusCode.Accepted)
-      .json({ message: "Login successful", token, refreshToken, user: { email: user.email , id: user._id.toString() } });
+      .json({ message: "Login successful", token, refreshToken, sessionId, loggedInAt, user: { email: user.email , id: user._id.toString() } });
       
     } catch (err) {
       next(err);
